@@ -1,35 +1,35 @@
 package vcodeHMAC
 
 import (
-	"bufio"
+	"errors"
 	"os"
-	"strings"
 )
 
-func getCredentials(fileString string) ([2]string, error) {
+func getCredentials(veracodeAPIKeyID, veracodeAPIKeySecret string) ([2]string, error) {
 	var credentials [2]string
 
-	file, err := os.Open(fileString)
-	if err != nil {
-		return credentials, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		//We remove spaces to account for discrepancies in user configuration of creds file
-		if strings.Contains(scanner.Text(), "veracode_api_key_id") {
-			removeSpaces := strings.Replace(scanner.Text(), " ", "", -1)
-			credentials[0] = strings.Replace(removeSpaces, "veracode_api_key_id=", "", -1)
-		} else if strings.Contains(scanner.Text(), "veracode_api_key_secret") {
-			removeSpaces := strings.Replace(scanner.Text(), " ", "", -1)
-			credentials[1] = strings.Replace(removeSpaces, "veracode_api_key_secret=", "", -1)
-		}
+	// Read Veracode API Key ID from arg, if not provided as an arg
+	if veracodeAPIKeyID == "" {
+		veracodeAPIKeyID = os.Getenv("VERACODE_API_KEY_ID")
 	}
 
-	if err := scanner.Err(); err != nil {
-		return credentials, err
+	// Read Veracode API Key Secret from arg, if not provided as an arg
+	if veracodeAPIKeySecret == "" {
+		veracodeAPIKeySecret = os.Getenv("VERACODE_API_KEY_SECRET")
 	}
 
-	return credentials, nil
+	// If still empty, then generate an error for missing credentials
+	var err error
+	if veracodeAPIKeyID == "" {
+		err = errors.New("No veracodeAPIKeyID found in env var")
+	}
+	if veracodeAPIKeySecret == "" {
+		err = errors.New("No veracodeAPIKeySecret found in env var")
+	}
+
+	// Setup the credentials arr
+	credentials[0] = veracodeAPIKeyID
+	credentials[1] = veracodeAPIKeySecret
+
+	return credentials, err
 }
